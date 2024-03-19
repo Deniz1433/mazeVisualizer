@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Visualizer</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+
+    #maze-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 20px auto 0; /* Center the maze horizontally and move it to the top */
+	}
+
+	div {
+		text-align: center; /* Center the content horizontally */
+	}
+
+
+
+    .cell {
+        width: 30px;
+        height: 30px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-top: 1px solid black;
+        border-right: 1px solid black;
+        border-bottom: 1px solid black;
+        border-left: 1px solid black;
+    }
+
+    .path {
+        background-color: lightblue;
+    }
+
+    .entry {
+        background-color: red;
+    }
+
+    .exit {
+        background-color: green;
+    }
+</style>
+</head>
+<body>
+<div>
+    <h2>Maze Visualizer</h2>
+    <label for="maze">Maze:</label><br>
+    <textarea id="maze" rows="10" cols="50"></textarea><br>
+    <label for="solution">Solution:</label><br>
+    <textarea id="solution" rows="10" cols="50"></textarea><br>
+    <button onclick="processMaze()">Process</button>
+    <div id="maze-container"></div>
+</div>
+
+<script>
+    function createMaze(rows, cols) {
+        const mazeContainer = document.getElementById('maze-container');
+        mazeContainer.innerHTML = '';
+        mazeContainer.style.width = `${cols * 30}px`;
+        for (let i = 0; i < rows * cols; i++) {
+            const cellDiv = document.createElement('div');
+            cellDiv.classList.add('cell');
+            mazeContainer.appendChild(cellDiv);
+        }
+    }
+
+    function visualizeMaze(mazeInput, rows, cols) {
+        mazeInput.forEach(cellData => {
+            const parts = cellData.split(' ');
+            const x = parseInt(parts.find(part => part.startsWith('x=')).split('=')[1]);
+            const y = parseInt(parts.find(part => part.startsWith('y=')).split('=')[1]);
+            const l = parseInt(parts.find(part => part.startsWith('l=')).split('=')[1]);
+            const r = parseInt(parts.find(part => part.startsWith('r=')).split('=')[1]);
+            const u = parseInt(parts.find(part => part.startsWith('u=')).split('=')[1]);
+            const d = parseInt(parts.find(part => part.startsWith('d=')).split('=')[1]);
+
+            const cellIndex = (rows - 1 - y) * cols + x;
+            const cellDiv = document.getElementById('maze-container').children[cellIndex];
+
+            cellDiv.style.borderTop = u === 0 ? 'none' : '1px solid black';
+            cellDiv.style.borderRight = r === 0 ? 'none' : '1px solid black';
+            cellDiv.style.borderBottom = d === 0 ? 'none' : '1px solid black';
+            cellDiv.style.borderLeft = l === 0 ? 'none' : '1px solid black';
+        });
+    }
+
+    function visualizeSolution(solutionInput, rows, cols) {
+        solutionInput.forEach((coord, index) => {
+            const [x, y] = coord.split(' ').map(Number);
+            const cellIndex = (rows - 1 - y) * cols + x;
+            const cellDiv = document.getElementById('maze-container').children[cellIndex];
+
+            if (index === 0) {
+                cellDiv.classList.add('entry');
+            } else if (index === solutionInput.length - 1) {
+                cellDiv.classList.add('exit');
+            } else {
+                cellDiv.classList.add('path');
+            }
+        });
+    }
+
+    function processMaze() {
+        const mazeTextArea = document.getElementById('maze');
+        const solutionTextArea = document.getElementById('solution');
+        const mazeInput = mazeTextArea.value.trim().split('\n');
+        const solutionInput = solutionTextArea.value.trim().split('\n');
+        const dimensions = mazeInput.shift().split(' ');
+        const rows = parseInt(dimensions[0]);
+        const cols = parseInt(dimensions[1]);
+        createMaze(rows, cols);
+        visualizeMaze(mazeInput, rows, cols);
+        visualizeSolution(solutionInput, rows, cols);
+    }
+</script>
+</body>
+</html>
