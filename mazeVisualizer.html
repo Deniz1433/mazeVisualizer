@@ -47,7 +47,7 @@
       <button id="genMaze">Generate Random Maze</button>
     </div>
 
-    <!-- Line 2: Entry, Exit, Generate Solution -->
+    <!-- Line 2: Entry, Exit, Generate & Clear Solution -->
     <div style="margin-bottom:1rem;">
       Entry: (
         <input id="entryX" type="number" min="0" value="0" style="width:5ch;">,
@@ -58,9 +58,10 @@
         <input id="exitY" type="number" min="0" value="9" style="width:5ch;">
       )
       <button id="solveMaze">Generate Solution</button>
+      <button id="clearSolution">Clear Solution</button>
     </div>
 
-    <!-- Line 3: Animation Speed, Animate Solution -->
+    <!-- Line 3: Animation Speed, Animate/Stop Solution -->
     <div style="margin-bottom:1rem;">
       Animation Speed: <input id="speed" type="number" min="0.1" step="0.1" value="1" style="width:4ch;">×
       <button id="animateMaze" disabled>Animate Solution</button>
@@ -70,6 +71,7 @@
   </div>
 
   <script>
+    // --- Data structures ---
     class Stack {
       constructor(){ this.data = []; }
       push(x){ this.data.push(x); }
@@ -77,51 +79,49 @@
       peek(){ return this.data[this.data.length - 1]; }
       isEmpty(){ return this.data.length === 0; }
     }
-
     class Cell {
-      constructor(x, y) {
+      constructor(x, y){
         this.x = x; this.y = y;
         this.visited = false;
         this.left = this.right = this.up = this.down = true;
       }
     }
-
     class Maze {
-      constructor(M, N) {
+      constructor(M, N){
         this.M = M; this.N = N;
         this.grid = Array.from({ length: M }, (_, r) =>
           Array.from({ length: N }, (_, c) => new Cell(c, r))
         );
       }
-      isInside(x, y) {
+      isInside(x, y){
         return x >= 0 && y >= 0 && x < this.N && y < this.M;
       }
-      getUnvisitedNeighbors(cell) {
+      getUnvisitedNeighbors(cell){
         const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
         return dirs
-          .map(([dx,dy]) => [cell.x+dx, cell.y+dy])
-          .filter(([x,y]) => this.isInside(x,y) && !this.grid[y][x].visited)
-          .map(([x,y]) => this.grid[y][x]);
+          .map(([dx,dy])=>[cell.x+dx,cell.y+dy])
+          .filter(([x,y])=>this.isInside(x,y)&&!this.grid[y][x].visited)
+          .map(([x,y])=>this.grid[y][x]);
       }
-      knockDown(a, b) {
-        if (a.x === b.x) {
-          if (a.y < b.y) { a.up = b.down = false; }
-          else           { a.down = b.up = false; }
+      knockDown(a, b){
+        if(a.x===b.x){
+          if(a.y<b.y){ a.up=b.down=false; }
+          else       { a.down=b.up=false; }
         } else {
-          if (a.x < b.x) { a.right = b.left = false; }
-          else           { a.left  = b.right = false; }
+          if(a.x<b.x){ a.right=b.left=false; }
+          else       { a.left=b.right=false; }
         }
       }
-      generateMaze() {
+      generateMaze(){
         const stack = new Stack();
         const start = this.grid[0][0];
         start.visited = true;
         stack.push(start);
-        while (!stack.isEmpty()) {
+        while(!stack.isEmpty()){
           const cur = stack.peek();
           const neigh = this.getUnvisitedNeighbors(cur);
-          if (neigh.length) {
-            const nxt = neigh[Math.floor(Math.random() * neigh.length)];
+          if(neigh.length){
+            const nxt = neigh[Math.floor(Math.random()*neigh.length)];
             this.knockDown(cur, nxt);
             nxt.visited = true;
             stack.push(nxt);
@@ -130,175 +130,205 @@
           }
         }
       }
-      toText() {
+      toText(){
         let out = `${this.M} ${this.N}\n`;
-        for (let r = 0; r < this.M; r++) {
-          for (let c = 0; c < this.N; c++) {
+        for(let r=0;r<this.M;r++){
+          for(let c=0;c<this.N;c++){
             const cell = this.grid[r][c];
-            out += `x=${cell.x} y=${cell.y}`
-                + ` l=${+cell.left}`
-                + ` r=${+cell.right}`
-                + ` u=${+cell.up}`
-                + ` d=${+cell.down}\n`;
+            out += `x=${cell.x} y=${cell.y}`+
+                   ` l=${+cell.left}`+
+                   ` r=${+cell.right}`+
+                   ` u=${+cell.up}`+
+                   ` d=${+cell.down}\n`;
           }
         }
         return out;
       }
-      findPath(sx, sy, ex, ey) {
-        this.grid.forEach(row => row.forEach(cell => cell.visited = false));
+      findPath(sx, sy, ex, ey){
+        this.grid.flat().forEach(cell=>cell.visited=false);
         const stack = new Stack();
         const start = this.grid[sy][sx];
         start.visited = true;
         stack.push(start);
-        while (!stack.isEmpty()) {
+        while(!stack.isEmpty()){
           const cur = stack.peek();
-          if (cur.x === ex && cur.y === ey) {
+          if(cur.x===ex && cur.y===ey){
             const path = [];
-            while (!stack.isEmpty()) path.push(stack.pop());
+            while(!stack.isEmpty()) path.push(stack.pop());
             return path.reverse();
           }
           let moved = false;
-          for (const nxt of this.getUnvisitedNeighbors(cur)) {
-            const dx = nxt.x - cur.x, dy = nxt.y - cur.y;
-            const ok = (dx===1  && !cur.right && !nxt.left)
-                    || (dx===-1 && !cur.left  && !nxt.right)
-                    || (dy===1  && !cur.up    && !nxt.down)
-                    || (dy===-1 && !cur.down  && !nxt.up);
-            if (ok) {
+          for(const nxt of this.getUnvisitedNeighbors(cur)){
+            const dx = nxt.x-cur.x, dy = nxt.y-cur.y;
+            const ok = (dx===1  && !cur.right && !nxt.left) ||
+                       (dx===-1 && !cur.left  && !nxt.right)||
+                       (dy===1  && !cur.up    && !nxt.down) ||
+                       (dy===-1 && !cur.down  && !nxt.up);
+            if(ok){
               nxt.visited = true;
               stack.push(nxt);
               moved = true;
               break;
             }
           }
-          if (!moved) stack.pop();
+          if(!moved) stack.pop();
         }
         return [];
       }
     }
 
-    // DOM refs
-    let currentMaze = null;
-    let lastPath    = null;
-    const mazeTA    = document.getElementById('maze');
-    const solTA     = document.getElementById('solution');
-    const container = document.getElementById('maze-container');
-    const sxIn      = document.getElementById('entryX');
-    const syIn      = document.getElementById('entryY');
-    const exIn      = document.getElementById('exitX');
-    const eyIn      = document.getElementById('exitY');
-    const speedIn   = document.getElementById('speed');
-    const animateBtn= document.getElementById('animateMaze');
+    // --- DOM refs & state ---
+    let currentMaze = null,
+        lastPath    = null,
+        animIdx     = 0,
+        animTimer   = null,
+        isAnimating = false;
 
-    function createGrid(rows, cols) {
-      container.innerHTML = '';
-      container.style.width = `${cols * 30}px`;
-      for (let i = 0; i < rows * cols; i++) {
-        const d = document.createElement('div');
-        d.className = 'cell';
+    const mazeTA    = document.getElementById('maze'),
+          solTA     = document.getElementById('solution'),
+          container = document.getElementById('maze-container'),
+          sxIn      = document.getElementById('entryX'),
+          syIn      = document.getElementById('entryY'),
+          exIn      = document.getElementById('exitX'),
+          eyIn      = document.getElementById('exitY'),
+          speedIn   = document.getElementById('speed'),
+          genBtn    = document.getElementById('genMaze'),
+          solveBtn  = document.getElementById('solveMaze'),
+          clearBtn  = document.getElementById('clearSolution'),
+          animateBtn= document.getElementById('animateMaze');
+
+    function createGrid(rows,cols){
+      container.innerHTML='';
+      container.style.width=`${cols*30}px`;
+      for(let i=0;i<rows*cols;i++){
+        const d=document.createElement('div');
+        d.className='cell';
         container.appendChild(d);
       }
     }
 
-    function renderMaze() {
-      const lines = mazeTA.value.trim().split('\n');
-      if (lines.length < 2) return;
-      const [rows, cols] = lines[0].split(' ').map(Number);
-      createGrid(rows, cols);
-      lines.slice(1).forEach(line => {
-        const p = line.split(' ');
-        const x = +p.find(s=>s.startsWith('x=')).split('=')[1];
-        const y = +p.find(s=>s.startsWith('y=')).split('=')[1];
-        const l = +p.find(s=>s.startsWith('l=')).split('=')[1];
-        const r = +p.find(s=>s.startsWith('r=')).split('=')[1];
-        const u = +p.find(s=>s.startsWith('u=')).split('=')[1];
-        const d = +p.find(s=>s.startsWith('d=')).split('=')[1];
-        const idx = (rows - 1 - y) * cols + x;
-        const cell = container.children[idx];
-        cell.style.borderTop    = u ? '1px solid black' : 'none';
-        cell.style.borderRight  = r ? '1px solid black' : 'none';
-        cell.style.borderBottom = d ? '1px solid black' : 'none';
-        cell.style.borderLeft   = l ? '1px solid black' : 'none';
+    function renderMaze(){
+      const lines=mazeTA.value.trim().split('\n');
+      if(lines.length<2) return;
+      const [rows,cols]=lines[0].split(' ').map(Number);
+      createGrid(rows,cols);
+      lines.slice(1).forEach(line=>{
+        const p=line.split(' ');
+        const x=+p.find(s=>s.startsWith('x=')).split('=')[1];
+        const y=+p.find(s=>s.startsWith('y=')).split('=')[1];
+        const l=+p.find(s=>s.startsWith('l=')).split('=')[1];
+        const r=+p.find(s=>s.startsWith('r=')).split('=')[1];
+        const u=+p.find(s=>s.startsWith('u=')).split('=')[1];
+        const d=+p.find(s=>s.startsWith('d=')).split('=')[1];
+        const idx=(rows-1-y)*cols+x;
+        const cell=container.children[idx];
+        cell.style.borderTop    = u?'1px solid black':'none';
+        cell.style.borderRight  = r?'1px solid black':'none';
+        cell.style.borderBottom = d?'1px solid black':'none';
+        cell.style.borderLeft   = l?'1px solid black':'none';
       });
     }
 
-    function renderSolutionStatic(path) {
-      const [rows, cols] = mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
-      path.forEach((cell,i) => {
-        const idx = (rows - 1 - cell.y) * cols + cell.x;
-        const d = container.children[idx];
-        if      (i === 0)                   d.classList.add('entry');
-        else if (i === path.length - 1)     d.classList.add('exit');
-        else                                 d.classList.add(i%2===0?'path-even':'path-odd');
+    function renderSolutionStatic(path){
+      const [rows,cols]=mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
+      path.forEach((cell,i)=>{
+        const idx=(rows-1-cell.y)*cols+cell.x;
+        const d=container.children[idx];
+        if(i===0)          d.classList.add('entry');
+        else if(i===path.length-1) d.classList.add('exit');
+        else               d.classList.add(i%2===0?'path-even':'path-odd');
       });
     }
 
-    function clampInputs() {
-      const maxX = currentMaze.N - 1;
-      const maxY = currentMaze.M - 1;
-      let sx = Math.min(Math.max(0, +sxIn.value), maxX);
-      let sy = Math.min(Math.max(0, +syIn.value), maxY);
-      let ex = Math.min(Math.max(0, +exIn.value), maxX);
-      let ey = Math.min(Math.max(0, +eyIn.value), maxY);
-      sxIn.value = sx; syIn.value = sy;
-      exIn.value = ex; eyIn.value = ey;
-      return { sx, sy, ex, ey };
+    function clampInputs(){
+      const maxX=currentMaze.N-1, maxY=currentMaze.M-1;
+      let sx=Math.min(Math.max(0,+sxIn.value),maxX),
+          sy=Math.min(Math.max(0,+syIn.value),maxY),
+          ex=Math.min(Math.max(0,+exIn.value),maxX),
+          ey=Math.min(Math.max(0,+eyIn.value),maxY);
+      sxIn.value=sx; syIn.value=sy;
+      exIn.value=ex; eyIn.value=ey;
+      return {sx,sy,ex,ey};
     }
 
-    // Generate
-    document.getElementById('genMaze').onclick = () => {
-      const M = +document.getElementById('rows').value;
-      const N = +document.getElementById('cols').value;
-      currentMaze = new Maze(M, N);
+    function cancelAnimation(){
+      if(animTimer!=null) clearTimeout(animTimer);
+      isAnimating = false;
+      animIdx = 0;
+      animateBtn.textContent = 'Animate Solution';
+      if(lastPath) renderSolutionStatic(lastPath);
+      else         renderMaze();
+    }
+
+    genBtn.onclick=()=>{
+      cancelAnimation();
+      const M=+document.getElementById('rows').value,
+            N=+document.getElementById('cols').value;
+      currentMaze=new Maze(M,N);
       currentMaze.generateMaze();
-      mazeTA.value = currentMaze.toText();
-      solTA.value = '';
-      lastPath = null;
-      animateBtn.disabled = true;
-
-      // adjust input ranges
-      sxIn.max = exIn.max = N - 1;
-      syIn.max = eyIn.max = M - 1;
+      mazeTA.value=currentMaze.toText();
+      solTA.value='';
+      lastPath=null;
+      animateBtn.disabled=true;
+      sxIn.max=exIn.max=N-1;
+      syIn.max=eyIn.max=M-1;
       clampInputs();
       renderMaze();
     };
 
-    // Solve
-    document.getElementById('solveMaze').onclick = () => {
-      if (!currentMaze) return alert('Generate a maze first.');
-      const { sx, sy, ex, ey } = clampInputs();
-      const path = currentMaze.findPath(sx, sy, ex, ey);
-      lastPath = path;
-      solTA.value = path.map(c=>`${c.x} ${c.y}`).join('\n');
+    solveBtn.onclick=()=>{
+      if(!currentMaze) return alert('Generate a maze first.');
+      cancelAnimation();
+      const {sx,sy,ex,ey}=clampInputs();
+      const path=currentMaze.findPath(sx,sy,ex,ey);
+      lastPath=path;
+      solTA.value=path.map(c=>`${c.x} ${c.y}`).join('\n');
       renderMaze();
       renderSolutionStatic(path);
-      animateBtn.disabled = false;
+      animateBtn.disabled=false;
     };
 
-    // Animate
-    animateBtn.onclick = () => {
-      if (!lastPath) return;
-      animateBtn.disabled = true;
-      renderMaze();
+    clearBtn.onclick=()=>{
+      if(!currentMaze) return;
+      cancelAnimation();
+      solTA.value='';
+      lastPath=null;
       container.querySelectorAll('.cell').forEach(c=>{
         c.classList.remove('path-even','path-odd','entry','exit');
       });
-      const [rows, cols] = mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
-      const speed = Math.max(0.1, +speedIn.value) || 1;
-      const baseDelay = 150;
-      const totalTime = lastPath.length * (baseDelay / speed);
+      animateBtn.disabled=true;
+    };
 
-      lastPath.forEach((cell, i) => {
-        setTimeout(() => {
-          const idx = (rows - 1 - cell.y) * cols + cell.x;
-          const d = container.children[idx];
-          if      (i === 0)               d.classList.add('entry');
-          else if (i === lastPath.length - 1) d.classList.add('exit');
-          else                             d.classList.add(i%2===0?'path-even':'path-odd');
-        }, i * (baseDelay / speed));
+    animateBtn.onclick=()=>{
+      if(isAnimating){
+        cancelAnimation();
+        return;
+      }
+      if(!lastPath) return;
+      isAnimating=true;
+      animateBtn.textContent='Stop Animation';
+      container.querySelectorAll('.cell').forEach(c=>{
+        c.classList.remove('path-even','path-odd','entry','exit');
       });
-
-      setTimeout(() => animateBtn.disabled = false, totalTime + 50);
+      animIdx = 0;
+      const [rows,cols]=mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
+      const baseDelay = 150;
+      function step(){
+        if(!isAnimating || animIdx>=lastPath.length){
+          cancelAnimation();
+          return;
+        }
+        const cell = lastPath[animIdx];
+        const idx = (rows - 1 - cell.y) * cols + cell.x;
+        const d = container.children[idx];
+        if(animIdx===0)          d.classList.add('entry');
+        else if(animIdx===lastPath.length-1) d.classList.add('exit');
+        else                     d.classList.add(animIdx%2===0?'path-even':'path-odd');
+        animIdx++;
+        const speed = Math.max(0.1, +speedIn.value) || 1;
+        animTimer = setTimeout(step, baseDelay / speed);
+      }
+      step();
     };
   </script>
 </body>
