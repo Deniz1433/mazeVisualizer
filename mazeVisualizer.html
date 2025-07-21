@@ -263,18 +263,28 @@
     }
 
     function cancelAnimation(){
-      if(animTimer != null) clearTimeout(animTimer);
-      isAnimating = false;
-      animIdx = 0;
-      animateBtn.textContent = 'Animate Solution';
-      if(lastPath) renderSolutionStatic(lastPath);
-      else         renderMaze();
-    }
+	  if(animTimer != null) clearTimeout(animTimer);
+	  isAnimating = false;
+	  animIdx = 0;
+	  animateBtn.textContent = 'Animate Solution';
+	  if(lastPath && currentMaze) renderSolutionStatic(lastPath);
+	  else if(currentMaze) renderMaze();
+	  else container.innerHTML = '';
+	}
 
     readMazeBtn.onclick = () => {
       cancelAnimation();
       const lines = mazeTA.value.trim().split('\n');
-      if(lines.length < 2) return alert('Maze input is empty or invalid.');
+      if(lines.length < 2) {
+		  currentMaze = null;
+		  lastPath = null;
+		  mazeTA.value = '';
+		  solTA.value = '';
+		  container.innerHTML = '';
+		  animateBtn.disabled = true;
+		  statusP.textContent = '';
+		  return;
+		}
       const [rows, cols] = lines[0].split(' ').map(Number);
       const maze = new Maze(rows, cols);
       lines.slice(1).forEach(line => {
@@ -309,7 +319,10 @@
       const real = currentMaze.findPath(sx, sy, ex, ey);
       const valid = manual.length === real.length && manual.every((c, i) => c.x === real[i].x && c.y === real[i].y);
       renderMaze();
-      renderSolutionStatic(manual);
+      if (manual.length === 0) {
+		  statusP.textContent = '';
+		  return;
+		}
       statusP.textContent = valid ? '' : 'Invalid solution!';
       animateBtn.disabled = true;
     };
