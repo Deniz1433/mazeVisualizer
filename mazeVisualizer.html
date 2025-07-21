@@ -6,67 +6,81 @@
   <title>Maze Visualizer</title>
   <style>
     body { font-family: Arial, sans-serif; }
-    #maze-container {
-      display: flex;
-      flex-wrap: wrap;
-      margin: 0 auto;
-    }
-    .cell {
-      width: 30px;
-      height: 30px;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid black;
-    }
+    .container { max-width: 700px; margin: 20px auto; }
+    h2 { text-align: center; }
+    .section { text-align: center; margin-bottom: 1rem; }
+    textarea { display: block; margin: 0.5rem auto; }
+    #maze-container { display: flex; flex-wrap: wrap; margin: 0 auto; }
+    .cell { width: 30px; height: 30px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid black; }
     .path-even { background-color: lightblue; border: none; }
     .path-odd  { background-color: hsl(195, 50%, 88%); border: none; }
     .entry     { background-color: red; }
     .exit      { background-color: green; }
+    .controls { text-align: center; margin-bottom: 1rem; }
+    input[type="number"] { margin: 0 0.2rem; width: 4ch; }
+    #solutionStatus { color: red; font-weight: bold; margin-top: 0.5rem; }
+    .control-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1rem; }
+    .control-group { display: flex; align-items: center; white-space: nowrap; }
   </style>
 </head>
 <body>
-  <div style="max-width:600px; margin:20px auto; text-align:center;">
+  <div class="container">
     <h2>Maze Visualizer</h2>
-
-    <div style="margin-bottom:1rem;">
-      <label for="maze">Maze:</label><br>
-      <textarea id="maze" rows="10" cols="50" readonly></textarea>
+    <div class="section">
+      <label for="maze">Maze:</label>
+      <textarea id="maze" rows="10" cols="50"></textarea>
+      <button id="readMaze">Read Maze from Input</button>
     </div>
-
-    <div style="margin-bottom:1rem;">
-      <label for="solution">Solution:</label><br>
-      <textarea id="solution" rows="10" cols="50" readonly></textarea>
+    <div class="section">
+      <label for="solution">Solution:</label>
+      <textarea id="solution" rows="10" cols="50"></textarea>
+      <button id="readSolution">Read Solution from Input</button>
+      <p id="solutionStatus"></p>
     </div>
-
-    <!-- Line 1: Rows, Cols, Generate Maze -->
-    <div style="margin-bottom:1rem;">
-      Rows: <input id="rows" type="number" min="2" value="10" style="width:5ch;">
-      Cols: <input id="cols" type="number" min="2" value="10" style="width:5ch;">
-      <button id="genMaze">Generate Random Maze</button>
+    <div class="controls">
+      <div class="control-row">
+        <div class="control-group">
+          <label>Rows:</label>
+          <input id="rows" type="number" min="2" value="10">
+        </div>
+        <div class="control-group">
+          <label>Cols:</label>
+          <input id="cols" type="number" min="2" value="10">
+        </div>
+        <button id="genMaze">Generate Random Maze</button>
+      </div>
     </div>
-
-    <!-- Line 2: Entry, Exit, Generate & Clear Solution -->
-    <div style="margin-bottom:1rem;">
-      Entry: (
-        <input id="entryX" type="number" min="0" value="0" style="width:5ch;">,
-        <input id="entryY" type="number" min="0" value="0" style="width:5ch;">
-      )
-      Exit:  (
-        <input id="exitX" type="number" min="0" value="9" style="width:5ch;">,
-        <input id="exitY" type="number" min="0" value="9" style="width:5ch;">
-      )
-      <button id="solveMaze">Generate Solution</button>
-      <button id="clearSolution">Clear Solution</button>
+    <div class="controls">
+      <div class="control-row">
+        <div class="control-group">
+          <label>Entry X:</label>
+          <input id="entryX" type="number" min="0" value="0">
+        </div>
+        <div class="control-group">
+          <label>Y:</label>
+          <input id="entryY" type="number" min="0" value="0">
+        </div>
+        <div class="control-group">
+          <label>Exit X:</label>
+          <input id="exitX" type="number" min="0" value="9">
+        </div>
+        <div class="control-group">
+          <label>Y:</label>
+          <input id="exitY" type="number" min="0" value="9">
+        </div>
+        <button id="solveMaze">Generate Solution</button>
+        <button id="clearSolution">Clear Solution</button>
+      </div>
     </div>
-
-    <!-- Line 3: Animation Speed, Animate/Stop Solution -->
-    <div style="margin-bottom:1rem;">
-      Animation Speed: <input id="speed" type="number" min="0.1" step="0.1" value="1" style="width:4ch;">×
-      <button id="animateMaze" disabled>Animate Solution</button>
+    <div class="controls">
+      <div class="control-row">
+        <div class="control-group">
+          <label>Animation Speed:</label>
+          <input id="speed" type="number" min="0.1" step="0.1" value="1">
+        </div>
+        <button id="animateMaze" disabled>Animate Solution</button>
+      </div>
     </div>
-
     <div id="maze-container"></div>
   </div>
 
@@ -93,23 +107,21 @@
           Array.from({ length: N }, (_, c) => new Cell(c, r))
         );
       }
-      isInside(x, y){
-        return x >= 0 && y >= 0 && x < this.N && y < this.M;
-      }
+      isInside(x, y){ return x >= 0 && y >= 0 && x < this.N && y < this.M; }
       getUnvisitedNeighbors(cell){
         const dirs = [[0,1],[1,0],[0,-1],[-1,0]];
         return dirs
-          .map(([dx,dy])=>[cell.x+dx,cell.y+dy])
-          .filter(([x,y])=>this.isInside(x,y)&&!this.grid[y][x].visited)
-          .map(([x,y])=>this.grid[y][x]);
+          .map(([dx,dy]) => [cell.x+dx, cell.y+dy])
+          .filter(([x,y]) => this.isInside(x,y) && !this.grid[y][x].visited)
+          .map(([x,y]) => this.grid[y][x]);
       }
       knockDown(a, b){
-        if(a.x===b.x){
-          if(a.y<b.y){ a.up=b.down=false; }
-          else       { a.down=b.up=false; }
+        if(a.x === b.x){
+          if(a.y < b.y){ a.up = b.down = false; }
+          else { a.down = b.up = false; }
         } else {
-          if(a.x<b.x){ a.right=b.left=false; }
-          else       { a.left=b.right=false; }
+          if(a.x < b.x){ a.right = b.left = false; }
+          else { a.left = b.right = false; }
         }
       }
       generateMaze(){
@@ -132,44 +144,39 @@
       }
       toText(){
         let out = `${this.M} ${this.N}\n`;
-        for(let r=0;r<this.M;r++){
-          for(let c=0;c<this.N;c++){
+        for(let r=0; r<this.M; r++){
+          for(let c=0; c<this.N; c++){
             const cell = this.grid[r][c];
-            out += `x=${cell.x} y=${cell.y}`+
-                   ` l=${+cell.left}`+
-                   ` r=${+cell.right}`+
-                   ` u=${+cell.up}`+
+            out += `x=${cell.x} y=${cell.y}` +
+                   ` l=${+cell.left}` +
+                   ` r=${+cell.right}` +
+                   ` u=${+cell.up}` +
                    ` d=${+cell.down}\n`;
           }
         }
         return out;
       }
       findPath(sx, sy, ex, ey){
-        this.grid.flat().forEach(cell=>cell.visited=false);
+        this.grid.flat().forEach(cell => cell.visited = false);
         const stack = new Stack();
         const start = this.grid[sy][sx];
         start.visited = true;
         stack.push(start);
         while(!stack.isEmpty()){
           const cur = stack.peek();
-          if(cur.x===ex && cur.y===ey){
+          if(cur.x === ex && cur.y === ey){
             const path = [];
             while(!stack.isEmpty()) path.push(stack.pop());
             return path.reverse();
           }
           let moved = false;
           for(const nxt of this.getUnvisitedNeighbors(cur)){
-            const dx = nxt.x-cur.x, dy = nxt.y-cur.y;
-            const ok = (dx===1  && !cur.right && !nxt.left) ||
-                       (dx===-1 && !cur.left  && !nxt.right)||
-                       (dy===1  && !cur.up    && !nxt.down) ||
-                       (dy===-1 && !cur.down  && !nxt.up);
-            if(ok){
-              nxt.visited = true;
-              stack.push(nxt);
-              moved = true;
-              break;
-            }
+            const dx = nxt.x - cur.x, dy = nxt.y - cur.y;
+            const ok = (dx===1 && !cur.right && !nxt.left) ||
+                       (dx===-1 && !cur.left && !nxt.right) ||
+                       (dy===1 && !cur.up && !nxt.down) ||
+                       (dy===-1 && !cur.down && !nxt.up);
+            if(ok){ nxt.visited = true; stack.push(nxt); moved = true; break; }
           }
           if(!moved) stack.pop();
         }
@@ -179,80 +186,84 @@
 
     // --- DOM refs & state ---
     let currentMaze = null,
-        lastPath    = null,
-        animIdx     = 0,
-        animTimer   = null,
+        lastPath = null,
+        animIdx = 0,
+        animTimer = null,
         isAnimating = false;
 
-    const mazeTA    = document.getElementById('maze'),
-          solTA     = document.getElementById('solution'),
-          container = document.getElementById('maze-container'),
-          sxIn      = document.getElementById('entryX'),
-          syIn      = document.getElementById('entryY'),
-          exIn      = document.getElementById('exitX'),
-          eyIn      = document.getElementById('exitY'),
-          speedIn   = document.getElementById('speed'),
-          genBtn    = document.getElementById('genMaze'),
-          solveBtn  = document.getElementById('solveMaze'),
-          clearBtn  = document.getElementById('clearSolution'),
-          animateBtn= document.getElementById('animateMaze');
+    const mazeTA       = document.getElementById('maze'),
+          solTA        = document.getElementById('solution'),
+          container    = document.getElementById('maze-container'),
+          sxIn         = document.getElementById('entryX'),
+          syIn         = document.getElementById('entryY'),
+          exIn         = document.getElementById('exitX'),
+          eyIn         = document.getElementById('exitY'),
+          speedIn      = document.getElementById('speed'),
+          genBtn       = document.getElementById('genMaze'),
+          solveBtn     = document.getElementById('solveMaze'),
+          clearBtn     = document.getElementById('clearSolution'),
+          animateBtn   = document.getElementById('animateMaze'),
+          readMazeBtn  = document.getElementById('readMaze'),
+          readSolBtn   = document.getElementById('readSolution'),
+          statusP      = document.getElementById('solutionStatus');
 
-    function createGrid(rows,cols){
-      container.innerHTML='';
-      container.style.width=`${cols*30}px`;
-      for(let i=0;i<rows*cols;i++){
-        const d=document.createElement('div');
-        d.className='cell';
+    function createGrid(rows, cols){
+      container.innerHTML = '';
+      container.style.width = `${cols * 30}px`;
+      for(let i = 0; i < rows * cols; i++){
+        const d = document.createElement('div');
+        d.className = 'cell';
         container.appendChild(d);
       }
     }
 
     function renderMaze(){
-      const lines=mazeTA.value.trim().split('\n');
-      if(lines.length<2) return;
-      const [rows,cols]=lines[0].split(' ').map(Number);
-      createGrid(rows,cols);
-      lines.slice(1).forEach(line=>{
-        const p=line.split(' ');
-        const x=+p.find(s=>s.startsWith('x=')).split('=')[1];
-        const y=+p.find(s=>s.startsWith('y=')).split('=')[1];
-        const l=+p.find(s=>s.startsWith('l=')).split('=')[1];
-        const r=+p.find(s=>s.startsWith('r=')).split('=')[1];
-        const u=+p.find(s=>s.startsWith('u=')).split('=')[1];
-        const d=+p.find(s=>s.startsWith('d=')).split('=')[1];
-        const idx=(rows-1-y)*cols+x;
-        const cell=container.children[idx];
-        cell.style.borderTop    = u?'1px solid black':'none';
-        cell.style.borderRight  = r?'1px solid black':'none';
-        cell.style.borderBottom = d?'1px solid black':'none';
-        cell.style.borderLeft   = l?'1px solid black':'none';
+      const lines = mazeTA.value.trim().split('\n');
+      if(lines.length < 2) return;
+      const [rows, cols] = lines[0].split(' ').map(Number);
+      createGrid(rows, cols);
+      lines.slice(1).forEach(line => {
+        const p = line.split(' '),
+              x = +p.find(s=>s.startsWith('x=')).split('=')[1],
+              y = +p.find(s=>s.startsWith('y=')).split('=')[1],
+              l = +p.find(s=>s.startsWith('l=')).split('=')[1],
+              r = +p.find(s=>s.startsWith('r=')).split('=')[1],
+              u = +p.find(s=>s.startsWith('u=')).split('=')[1],
+              d = +p.find(s=>s.startsWith('d=')).split('=')[1];
+        const idx = (rows - 1 - y) * cols + x;
+        const cell = container.children[idx];
+        cell.style.borderTop    = u ? '1px solid black' : 'none';
+        cell.style.borderRight  = r ? '1px solid black' : 'none';
+        cell.style.borderBottom = d ? '1px solid black' : 'none';
+        cell.style.borderLeft   = l ? '1px solid black' : 'none';
       });
     }
 
     function renderSolutionStatic(path){
-      const [rows,cols]=mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
-      path.forEach((cell,i)=>{
-        const idx=(rows-1-cell.y)*cols+cell.x;
-        const d=container.children[idx];
-        if(i===0)          d.classList.add('entry');
-        else if(i===path.length-1) d.classList.add('exit');
-        else               d.classList.add(i%2===0?'path-even':'path-odd');
+      const [rows, cols] = mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
+      path.forEach((cell, i) => {
+        const idx = (rows - 1 - cell.y) * cols + cell.x;
+        const d = container.children[idx];
+        if(i === 0)          d.classList.add('entry');
+        else if(i === path.length - 1) d.classList.add('exit');
+        else               d.classList.add(i % 2 === 0 ? 'path-even' : 'path-odd');
       });
     }
 
     function clampInputs(){
-      const maxX=currentMaze.N-1, maxY=currentMaze.M-1;
-      let sx=Math.min(Math.max(0,+sxIn.value),maxX),
-          sy=Math.min(Math.max(0,+syIn.value),maxY),
-          ex=Math.min(Math.max(0,+exIn.value),maxX),
-          ey=Math.min(Math.max(0,+eyIn.value),maxY);
-      sxIn.value=sx; syIn.value=sy;
-      exIn.value=ex; eyIn.value=ey;
-      return {sx,sy,ex,ey};
+      const maxX = currentMaze.N - 1,
+            maxY = currentMaze.M - 1;
+      let sx = Math.min(Math.max(0, +sxIn.value), maxX),
+          sy = Math.min(Math.max(0, +syIn.value), maxY),
+          ex = Math.min(Math.max(0, +exIn.value), maxX),
+          ey = Math.min(Math.max(0, +eyIn.value), maxY);
+      sxIn.value = sx; syIn.value = sy;
+      exIn.value = ex; eyIn.value = ey;
+      return { sx, sy, ex, ey };
     }
 
     function cancelAnimation(){
-      if(animTimer!=null) clearTimeout(animTimer);
+      if(animTimer != null) clearTimeout(animTimer);
       isAnimating = false;
       animIdx = 0;
       animateBtn.textContent = 'Animate Solution';
@@ -260,70 +271,105 @@
       else         renderMaze();
     }
 
-    genBtn.onclick=()=>{
+    readMazeBtn.onclick = () => {
       cancelAnimation();
-      const M=+document.getElementById('rows').value,
-            N=+document.getElementById('cols').value;
-      currentMaze=new Maze(M,N);
-      currentMaze.generateMaze();
-      mazeTA.value=currentMaze.toText();
-      solTA.value='';
-      lastPath=null;
-      animateBtn.disabled=true;
-      sxIn.max=exIn.max=N-1;
-      syIn.max=eyIn.max=M-1;
+      const lines = mazeTA.value.trim().split('\n');
+      if(lines.length < 2) return alert('Maze input is empty or invalid.');
+      const [rows, cols] = lines[0].split(' ').map(Number);
+      const maze = new Maze(rows, cols);
+      lines.slice(1).forEach(line => {
+        const p = line.split(' '),
+              x = +p.find(s=>s.startsWith('x=')).split('=')[1],
+              y = +p.find(s=>s.startsWith('y=')).split('=')[1],
+              l = +p.find(s=>s.startsWith('l=')).split('=')[1],
+              r = +p.find(s=>s.startsWith('r=')).split('=')[1],
+              u = +p.find(s=>s.startsWith('u=')).split('=')[1],
+              d = +p.find(s=>s.startsWith('d=')).split('=')[1];
+        const cellMove=maze.grid[y][x];cellMove.left=!!l;cellMove.right=!!r;cellMove.up=!!u;cellMove.down=!!d;
+      });
+      currentMaze = maze;
+      lastPath    = null;
+      solTA.value = '';
+      statusP.textContent = '';
+      animateBtn.disabled = true;
+      sxIn.max = exIn.max = cols - 1;
+      syIn.max = eyIn.max = rows - 1;
       clampInputs();
       renderMaze();
     };
 
-    solveBtn.onclick=()=>{
+    readSolBtn.onclick = () => {
+      if(!currentMaze) return alert('Load a maze first.');
+      cancelAnimation();
+      const { sx, sy, ex, ey } = clampInputs();
+      const manual = solTA.value.trim().split('\n').map(l => {
+        const [x, y] = l.trim().split(' ').map(Number);
+        return isNaN(x)||isNaN(y) ? null : { x, y };
+      }).filter(c => c);
+      const real = currentMaze.findPath(sx, sy, ex, ey);
+      const valid = manual.length === real.length && manual.every((c, i) => c.x === real[i].x && c.y === real[i].y);
+      renderMaze();
+      renderSolutionStatic(manual);
+      statusP.textContent = valid ? '' : 'Invalid solution!';
+      animateBtn.disabled = true;
+    };
+
+    genBtn.onclick = () => {
+      cancelAnimation();
+      const M = +document.getElementById('rows').value,
+            N = +document.getElementById('cols').value;
+      currentMaze = new Maze(M, N);
+      currentMaze.generateMaze();
+      mazeTA.value = currentMaze.toText();
+      solTA.value  = '';
+      lastPath     = null;
+      statusP.textContent = '';
+      animateBtn.disabled = true;
+      sxIn.max = exIn.max = N - 1;
+      syIn.max = eyIn.max = M - 1;
+      clampInputs();
+      renderMaze();
+    };
+
+    solveBtn.onclick = () => {
       if(!currentMaze) return alert('Generate a maze first.');
       cancelAnimation();
-      const {sx,sy,ex,ey}=clampInputs();
-      const path=currentMaze.findPath(sx,sy,ex,ey);
-      lastPath=path;
-      solTA.value=path.map(c=>`${c.x} ${c.y}`).join('\n');
+      const { sx, sy, ex, ey } = clampInputs();
+      const path = currentMaze.findPath(sx, sy, ex, ey);
+      lastPath = path;
+      solTA.value = path.map(c => `${c.x} ${c.y}`).join('\n');
       renderMaze();
       renderSolutionStatic(path);
-      animateBtn.disabled=false;
+      animateBtn.disabled = false;
     };
 
-    clearBtn.onclick=()=>{
+    clearBtn.onclick = () => {
       if(!currentMaze) return;
       cancelAnimation();
-      solTA.value='';
-      lastPath=null;
-      container.querySelectorAll('.cell').forEach(c=>{
-        c.classList.remove('path-even','path-odd','entry','exit');
-      });
-      animateBtn.disabled=true;
+      solTA.value = '';
+      lastPath = null;
+      container.querySelectorAll('.cell').forEach(c => c.classList.remove('path-even','path-odd','entry','exit'));
+      animateBtn.disabled = true;
+      statusP.textContent = '';
     };
 
-    animateBtn.onclick=()=>{
-      if(isAnimating){
-        cancelAnimation();
-        return;
-      }
+    animateBtn.onclick = () => {
+      if(isAnimating){ cancelAnimation(); return; }
       if(!lastPath) return;
-      isAnimating=true;
-      animateBtn.textContent='Stop Animation';
-      container.querySelectorAll('.cell').forEach(c=>{
-        c.classList.remove('path-even','path-odd','entry','exit');
-      });
+      isAnimating = true;
+      animateBtn.textContent = 'Stop Animation';
+      container.querySelectorAll('.cell').forEach(c => c.classList.remove('path-even','path-odd','entry','exit'));
       animIdx = 0;
-      const [rows,cols]=mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
+      const [rows, cols] = mazeTA.value.trim().split('\n')[0].split(' ').map(Number);
       const baseDelay = 150;
       function step(){
-        if(!isAnimating || animIdx>=lastPath.length){
-          cancelAnimation();
-          return;
-        }
+        if(!isAnimating || animIdx >= lastPath.length){ cancelAnimation(); return; }
         const cell = lastPath[animIdx];
         const idx = (rows - 1 - cell.y) * cols + cell.x;
-        const d = container.children[idx];
-        if(animIdx===0)          d.classList.add('entry');
-        else if(animIdx===lastPath.length-1) d.classList.add('exit');
-        else                     d.classList.add(animIdx%2===0?'path-even':'path-odd');
+        const d   = container.children[idx];
+        if(animIdx === 0)          d.classList.add('entry');
+        else if(animIdx === lastPath.length - 1) d.classList.add('exit');
+        else                     d.classList.add(animIdx % 2 === 0 ? 'path-even' : 'path-odd');
         animIdx++;
         const speed = Math.max(0.1, +speedIn.value) || 1;
         animTimer = setTimeout(step, baseDelay / speed);
